@@ -22,4 +22,5 @@ urlpatterns = [
     
     # API endpoints
     path('api/papers/', include('apps.papers.urls')),
+    path('api/reports/', include('apps.reports.urls')),
 ]
