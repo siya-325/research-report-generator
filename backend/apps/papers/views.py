@@ -4,20 +4,21 @@ from rest_framework import status
 
 from .models import Paper
 from .serializers import PaperSerializer, PaperSearchRequestSerializer
-from .services import ArxivAPIClient
+from .services_unified import UnifiedSearchClient
 
 
 @api_view(['POST'])
 def search_papers(request):
     """
-    Search for papers from arXiv and save to database
+    Search for papers from multiple sources and save to database
     
     Endpoint: POST /api/papers/search/
     
     Request body:
     {
         "query": "machine learning",
-        "max_results": 10
+        "max_results": 10,
+        "sources": ["arxiv", "semantic_scholar", "pubmed"]  // optional
     }
     
     Response:
@@ -28,14 +29,12 @@ def search_papers(request):
         "total_found": 10,
         "new_papers": 5,
         "existing_papers": 5,
-        "papers": [
-            {
-                "id": 1,
-                "title": "...",
-                "authors": "...",
-                ...
-            }
-        ]
+        "breakdown": {
+            "arxiv": 4,
+            "semantic_scholar": 3,
+            "pubmed": 3
+        },
+        "papers": [...]
     }
     """
     
@@ -51,51 +50,39 @@ def search_papers(request):
     query = request_serializer.validated_data['query']
     max_results = request_serializer.validated_data['max_results']
     
-    try:
-        # Search arXiv
-        client = ArxivAPIClient()
-        papers_data = client.search(query, max_results=max_results)
-        
-        if not papers_data:
+    # Get sources from request (optional)
+    sources = request.data.get('sources', None)
+    
+    # Validate sources if provided
+    if sources:
+        valid_sources = ['arxiv', 'semantic_scholar', 'pubmed']
+        invalid_sources = [s for s in sources if s not in valid_sources]
+        if invalid_sources:
             return Response({
-                'status': 'success',
-                'message': 'No papers found',
-                'query': query,
-                'total_found': 0,
-                'new_papers': 0,
-                'existing_papers': 0,
-                'papers': []
-            }, status=status.HTTP_200_OK)
-        
-        # Save papers to database
-        saved_papers = []
-        new_count = 0
-        existing_count = 0
-        
-        for paper_data in papers_data:
-            paper, created = Paper.objects.get_or_create(
-                source_api=paper_data['source_api'],
-                external_id=paper_data['external_id'],
-                defaults=paper_data
-            )
-            
-            saved_papers.append(paper)
-            
-            if created:
-                new_count += 1
-            else:
-                existing_count += 1
+                'status': 'error',
+                'message': f'Invalid sources: {invalid_sources}. Valid sources: {valid_sources}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Search using UnifiedSearchClient
+        client = UnifiedSearchClient()
+        result = client.search_and_save(
+            query=query,
+            max_results=max_results,
+            sources=sources
+        )
         
         # Serialize papers for response
-        serializer = PaperSerializer(saved_papers, many=True)
+        serializer = PaperSerializer(result['papers'], many=True)
         
         return Response({
             'status': 'success',
-            'message': f'Found {len(papers_data)} papers, saved {new_count} new papers',
+            'message': f"Found {result['total_found']} papers, saved {result['new_papers']} new papers",
             'query': query,
-            'total_found': len(papers_data),
-            'new_papers': new_count,
-            'existing_papers': existing_count,
+            'total_found': result['total_found'],
+            'new_papers': result['new_papers'],
+            'existing_papers': result['existing_papers'],
+            'breakdown': result['breakdown'],
             'papers': serializer.data
         }, status=status.HTTP_200_OK)
         
@@ -114,7 +101,7 @@ def list_papers(request):
     Endpoint: GET /api/papers/
     
     Query parameters:
-    - source_api: Filter by source (e.g., 'arxiv')
+    - source_api: Filter by source (e.g., 'arxiv', 'semantic_scholar', 'pubmed')
     - limit: Number of papers (default: 20)
     """
     

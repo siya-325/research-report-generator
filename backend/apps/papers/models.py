@@ -9,7 +9,7 @@ class Paper(models.Model):
     # Basic info
     title = models.CharField(max_length=500)
     authors = models.TextField()  # Comma-separated for now
-    abstract = models.TextField(blank=True)
+    abstract = models.TextField(blank=True, default='')
     published_date = models.DateField(null=True, blank=True)
     
     # Source information

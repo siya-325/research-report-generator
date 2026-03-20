@@ -136,7 +136,7 @@ class ArxivAPIClient:
         paper = {
             'title': title,
             'authors': ', '.join(authors),  # Join as comma-separated string
-            'abstract': abstract,
+            'abstract': abstract or '',
             'published_date': published_date,
             'source_api': 'arxiv',
             'external_id': arxiv_id,

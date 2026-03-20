@@ -134,7 +134,7 @@ class SemanticScholarAPIClient:
         formatted = {
             'title': paper.get('title', 'Untitled'),
             'authors': authors or 'Unknown',
-            'abstract': paper.get('abstract', ''),
+            'abstract': paper.get('abstract') or '',
             'published_date': published_date,
             'source_api': 'semantic_scholar',
             'external_id': paper_id or '',
