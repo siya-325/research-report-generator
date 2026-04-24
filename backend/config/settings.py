@@ -56,6 +56,10 @@ INSTALLED_APPS = [
     'apps.papers',
     'apps.reports',
     'apps.users',
+    'apps.subscriptions',
+    
+    # Celery
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [

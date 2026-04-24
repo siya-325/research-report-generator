@@ -24,5 +24,5 @@ urlpatterns = [
     path('api/auth/', include('apps.users.urls')),
     path('api/papers/', include('apps.papers.urls')),
     path('api/reports/', include('apps.reports.urls')),
-    
+    path('api/subscriptions/', include('apps.subscriptions.urls')),
 ]
