@@ -123,25 +123,19 @@ Be analytical and critical, not just descriptive.
         Returns:
             Tuple of (report_text, papers_list)
         """
+    
+        # Step 1: Search for papers using UnifiedSearchClient
+        from apps.papers.services_unified import UnifiedSearchClient
         
-        # Step 1: Search for papers
-        arxiv_client = ArxivAPIClient()
-        papers_data = arxiv_client.search(topic, max_results=max_papers)
+        unified_client = UnifiedSearchClient()
+        result = unified_client.search_and_save(topic, max_results=max_papers)
         
-        if not papers_data:
+        saved_papers = result['papers']
+        
+        if not saved_papers:
             return "No papers found for this topic.", []
         
-        # Step 2: Save papers to database (if not already saved)
-        saved_papers = []
-        for paper_data in papers_data:
-            paper, created = Paper.objects.get_or_create(
-                source_api=paper_data['source_api'],
-                external_id=paper_data['external_id'],
-                defaults=paper_data
-            )
-            saved_papers.append(paper)
-        
-        # Step 3: Generate literature review
+        # Step 2: Generate literature review
         report_text = self.generate_literature_review(topic, saved_papers)
         
         return report_text, saved_papers

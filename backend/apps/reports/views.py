@@ -1,8 +1,8 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from celery.result import AsyncResult 
-
+from rest_framework.permissions import IsAuthenticated
 from .models import LiteratureReport
 from .serializers import (
     LiteratureReportSerializer, 
@@ -12,6 +12,7 @@ from .services import ReportGenerator
 from .tasks import generate_literature_report_task
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def generate_report_async(request):
     """
     Generate AI-powered literature review ASYNCHRONOUSLY
@@ -46,7 +47,7 @@ def generate_report_async(request):
     max_papers = request_serializer.validated_data['max_papers']
     
     # Send task to Celery (async)
-    task = generate_literature_report_task.delay(topic, max_papers)
+    task = generate_literature_report_task.delay(topic, max_papers, request.user.id)
     
     return Response({
         'status': 'processing',
@@ -154,8 +155,26 @@ def get_report_result(request, task_id):
             'message': f'Report with id {report_id} not found'
         }, status=status.HTTP_404_NOT_FOUND)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_reports(request):
+    """
+    Get reports for the current user only
+    
+    Endpoint: GET /api/reports/my-reports/
+    """
+    
+    reports = LiteratureReport.objects.filter(user=request.user).order_by('-created_at')[:20]
+    serializer = LiteratureReportSerializer(reports, many=True)
+    
+    return Response({
+        'status': 'success',
+        'count': len(serializer.data),
+        'reports': serializer.data
+    }, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def generate_report(request):
     """
     Generate AI-powered literature review
@@ -199,8 +218,9 @@ def generate_report(request):
             max_papers=max_papers
         )
         
-        # Save to database
+        # Save to database WITH USER ID
         report = LiteratureReport.objects.create(
+            user=request.user,
             topic=topic,
             report_content=report_text,
             papers_analyzed=len(papers),

@@ -5,17 +5,15 @@ from apps.papers.services_unified import UnifiedSearchClient
 
 
 @shared_task(bind=True, name='generate_literature_report')
-def generate_literature_report_task(self, topic: str, max_papers: int = 20):
+def generate_literature_report_task(self, topic: str, max_papers: int = 20, user_id: int = None):
     """
     Celery task to generate literature review asynchronously
     
     Args:
-        self: Task instance (bind=True gives us access)
+        self: Task instance
         topic: Research topic
         max_papers: Number of papers to analyze
-        
-    Returns:
-        Report ID
+        user_id: ID of user who requested the report
     """
     
     # Update task state to show progress
@@ -34,6 +32,7 @@ def generate_literature_report_task(self, topic: str, max_papers: int = 20):
         if not saved_papers:
             # No papers found - create failed report
             report = LiteratureReport.objects.create(
+                user_id=user_id,
                 topic=topic,
                 report_content='',
                 papers_analyzed=0,
@@ -60,6 +59,7 @@ def generate_literature_report_task(self, topic: str, max_papers: int = 20):
         
         # Step 3: Save report to database
         report = LiteratureReport.objects.create(
+            user_id=user_id,
             topic=topic,
             report_content=report_text,
             papers_analyzed=len(saved_papers),
@@ -80,6 +80,7 @@ def generate_literature_report_task(self, topic: str, max_papers: int = 20):
     except Exception as e:
         # Handle errors
         report = LiteratureReport.objects.create(
+            user_id=user_id,
             topic=topic,
             report_content='',
             papers_analyzed=0,

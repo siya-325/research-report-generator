@@ -1,11 +1,20 @@
 from django.db import models
 from apps.papers.models import Paper
-
+from django.conf import settings
 
 class LiteratureReport(models.Model):
     """
     AI-generated literature review reports
     """
+
+    # User who created this report
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reports',
+        null=True,  # Temporary - allow null for existing reports
+        blank=True
+    )
     
     # Research topic
     topic = models.CharField(max_length=500)

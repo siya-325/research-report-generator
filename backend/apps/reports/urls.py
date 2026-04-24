@@ -11,6 +11,9 @@ urlpatterns = [
     
     # Synchronous report generation (kept for compatibility)
     path('generate/', views.generate_report, name='generate'),
+
+    # My reports (user-specific)
+    path('my-reports/', views.my_reports, name='my-reports'),
     
     # List all reports
     path('', views.list_reports, name='list'),
