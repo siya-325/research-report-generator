@@ -7,7 +7,7 @@ User = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
-    Serializer for user registration
+    Serializer for user registration - Gmail only
     """
     password = serializers.CharField(
         write_only=True,
@@ -19,6 +19,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'username', 'name', 'password', 'password_confirm')
+    
+    def validate_email(self, value):
+        """
+        Validate that email is a Gmail address
+        """
+        email_domain = value.split('@')[-1].lower()
+        
+        if email_domain not in ['gmail.com', 'googlemail.com']:
+            raise serializers.ValidationError(
+                "Please use a Gmail address. Only Gmail accounts are supported."
+            )
+        
+        return value
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:

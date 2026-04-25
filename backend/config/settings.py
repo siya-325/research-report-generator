@@ -14,6 +14,7 @@ from pathlib import Path
 from decouple import config
 import sys 
 from datetime import timedelta
+import os
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.CustomUser'
@@ -151,11 +152,16 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# CORS Configuration
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # React dev server
-    "http://127.0.0.1:5173",
+    'http://localhost:8080',  # ← ADD THIS (your Vite port)
+    'http://127.0.0.1:8080',  # ← ADD THIS
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
 ]
 
 # Allow all origins in development
@@ -210,3 +216,14 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
+
+
+# ============================================
+# GOOGLE OAUTH CONFIGURATION
+# ============================================
+
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '')
+
+# For now, we'll use a simpler approach - just validate Gmail emails
+ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'googlemail.com']  # Only allow Gmail
